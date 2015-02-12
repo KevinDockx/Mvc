@@ -1339,10 +1339,6 @@ namespace Microsoft.AspNet.Mvc.Test
         {
             var metadataProvider = new DataAnnotationsModelMetadataProvider();
             var httpContext = new DefaultHttpContext();
-            var services = new Mock<IServiceProvider>();
-            services.Setup(p => p.GetService(typeof(IValidationExcludeFiltersProvider)))
-                    .Returns(Mock.Of<IValidationExcludeFiltersProvider>());
-            httpContext.RequestServices = services.Object;
             var actionContext = new ActionContext(httpContext, new RouteData(), new ActionDescriptor());
 
             var viewData = new ViewDataDictionary(metadataProvider, new ModelStateDictionary());
@@ -1360,7 +1356,7 @@ namespace Microsoft.AspNet.Mvc.Test
                 BindingContext = bindingContext,
                 MetadataProvider = metadataProvider,
                 ViewData = viewData,
-                ObjectValidator = new DefaultObjectValidator()
+                ObjectValidator = new DefaultObjectValidator(Mock.Of<IValidationExcludeFiltersProvider>())
             };
         }
 

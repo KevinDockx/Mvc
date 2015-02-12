@@ -76,6 +76,11 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             }
         }
 
+        /// <summary>
+        /// Gets or sets the model name which was used to bind the model.
+        /// 
+        /// This property can be used during validation to add model state for a bound model.
+        /// </summary>
         public string ModelStateKey { get; set; }
 
         /// <summary>

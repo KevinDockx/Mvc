@@ -421,16 +421,12 @@ namespace System.Web.Http
         {
             var modelMetadata = MetadataProvider.GetMetadataForType(() => entity, typeof(TEntity));
 
-            var validationExcludeFiltersProvider = Context.RequestServices
-                                                              .GetRequiredService<IValidationExcludeFiltersProvider>();
-
             var modelValidationContext = new ModelValidationContext(
                 MetadataProvider,
                 BindingContext.ValidatorProvider,
                 ModelState,
                 modelMetadata,
-                containerMetadata: null,
-                excludeFromValidationFilters: validationExcludeFiltersProvider.ExcludeFilters);
+                containerMetadata: null);
 
             ObjectValidator.Validate(modelValidationContext, keyPrefix);
         }

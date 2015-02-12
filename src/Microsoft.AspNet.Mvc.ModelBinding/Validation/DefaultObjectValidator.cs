@@ -16,6 +16,13 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
     /// </summary>
     public class DefaultObjectValidator : IObjectModelValidator
     {
+        private readonly IValidationExcludeFiltersProvider _excludeFilterProvider;
+        
+        public DefaultObjectValidator(IValidationExcludeFiltersProvider excludeFilterProvider)
+        {
+            _excludeFilterProvider = excludeFilterProvider;
+        }
+
         /// <inheritdoc />
         public void Validate([NotNull] ModelValidationContext modelValidationContext, string modelStatePrefix)
         {
@@ -38,7 +45,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             var modelState = validationContext.ModelValidationContext.ModelState;
             if (modelState.HasReachedMaxErrors)
             {
-                // Short circuit if max erros have been recorded. In which case we treat this as invalid.
+                // Short circuit if max errors have been recorded. In which case we treat this as invalid.
                 return false;
             }
 
@@ -59,9 +66,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
             // We don't need to recursively traverse the graph for types that shouldn't be validated
             var modelType = metadata.Model.GetType();
-            if (IsTypeExcludedFromValidation(
-                validationContext.ModelValidationContext.ExcludeFromValidationFilters,
-                modelType))
+            if (IsTypeExcludedFromValidation(_excludeFilterProvider.ExcludeFilters, modelType))
             {
                 var result = ShallowValidate(modelKey, metadata, validationContext, validators);
                 MarkPropertiesAsSkipped(modelKey, metadata, validationContext);
@@ -127,9 +132,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         {
             var isValid = true;
 
-            foreach (var childMetadata in
-                validationContext.ModelValidationContext.MetadataProvider.GetMetadataForProperties(
-                    metadata.Model, metadata.RealModelType))
+            foreach (var childMetadata in metadata.Properties)
             {
                 var childKey = ModelBindingHelper.CreatePropertyModelName(currentModelKey, childMetadata.PropertyName);
                 if (!ValidateNonVisitedNodeAndChildren(childKey, childMetadata, validationContext, validators: null))
@@ -182,7 +185,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             string modelKey,
             ModelMetadata metadata,
             ValidationContext validationContext,
-            [NotNull] IEnumerable<IModelValidator> validators)
+            IEnumerable<IModelValidator> validators)
         {
             var isValid = true;
 
@@ -211,7 +214,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                             {
 
                                 // If we are not able to add a model error 
-                                // ( for instance when the max error count is reached, mark the model as skipped. 
+                                // for instance when the max error count is reached, mark the model as skipped. 
                                 modelState.MarkFieldSkipped(errorKey);
                             }
 

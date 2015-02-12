@@ -19,17 +19,15 @@ namespace Microsoft.AspNet.Mvc
         private readonly IModelMetadataProvider _modelMetadataProvider;
         private readonly MvcOptions _options;
         private readonly IObjectModelValidator _validator;
-        private readonly IValidationExcludeFiltersProvider _excludeFilterProvider;
+
         public DefaultControllerActionArgumentBinder(
             IModelMetadataProvider modelMetadataProvider,
             IObjectModelValidator validator,
-            IValidationExcludeFiltersProvider excludeFilterProvider,
             IOptions<MvcOptions> optionsAccessor)
         {
             _modelMetadataProvider = modelMetadataProvider;
             _options = optionsAccessor.Options;
             _validator = validator;
-            _excludeFilterProvider = excludeFilterProvider;
         }
 
         public async Task<IDictionary<string, object>> GetActionArgumentsAsync(
@@ -109,8 +107,7 @@ namespace Microsoft.AspNet.Mvc
                     bindingContext.ValidatorProvider,
                     actionContext.ModelState,
                     parameter,
-                    containerMetadata: null,
-                    excludeFromValidationFilters: _excludeFilterProvider.ExcludeFilters);
+                    containerMetadata: null);
                     _validator.Validate(validationContext, modelBindingContext.ModelStateKey);
                 }
             }

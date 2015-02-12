@@ -2038,7 +2038,7 @@ namespace Microsoft.AspNet.Mvc
             var inputFormattersProvider = new Mock<IInputFormattersProvider>();
             inputFormattersProvider.SetupGet(o => o.InputFormatters)
                                             .Returns(new List<IInputFormatter>());
-
+            var metadataProvider = new EmptyModelMetadataProvider();
             var invoker = new ControllerActionInvoker(
                 actionContext,
                 Mock.Of<INestedProviderManager<FilterProviderContext>>(),
@@ -2046,14 +2046,13 @@ namespace Microsoft.AspNet.Mvc
                 actionDescriptor,
                 inputFormattersProvider.Object,
                 new DefaultControllerActionArgumentBinder(
-                    new EmptyModelMetadataProvider(),
-                    new DefaultObjectValidator(),
-                    Mock.Of<IValidationExcludeFiltersProvider>(),
+                    metadataProvider,
+                    new DefaultObjectValidator(Mock.Of<IValidationExcludeFiltersProvider>()),
                     new MockMvcOptionsAccessor()),
-                new MockModelBinderProvider() { ModelBinders = new List<IModelBinder>() { binder.Object } },
-                new MockModelValidatorProviderProvider(),
-                new MockValueProviderFactoryProvider(),
-                new MockScopedInstance<ActionBindingContext>());
+                    new MockModelBinderProvider() { ModelBinders = new List<IModelBinder>() { binder.Object } },
+                    new MockModelValidatorProviderProvider(),
+                    new MockValueProviderFactoryProvider(),
+                    new MockScopedInstance<ActionBindingContext>());
 
             // Act
             await invoker.InvokeAsync();

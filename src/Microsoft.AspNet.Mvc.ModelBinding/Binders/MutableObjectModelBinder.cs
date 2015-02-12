@@ -483,10 +483,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 if (validationState == ModelValidationState.Unvalidated)
                 {
                     var errorMessage = Resources.ModelBinderConfig_ValueRequired;
-                    if (errorMessage != null)
-                    {
-                        bindingContext.ModelState.TryAddModelError(modelStateKey, errorMessage);
-                    }
+                    bindingContext.ModelState.TryAddModelError(modelStateKey, errorMessage);
                 }
             }
         }

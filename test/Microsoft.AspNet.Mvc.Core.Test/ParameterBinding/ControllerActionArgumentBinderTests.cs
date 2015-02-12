@@ -190,11 +190,9 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             inputFormattersProvider
                 .SetupGet(o => o.InputFormatters)
                 .Returns(new List<IInputFormatter>());
-
             var invoker = new DefaultControllerActionArgumentBinder(
                 new DataAnnotationsModelMetadataProvider(),
-                new DefaultObjectValidator(),
-                Mock.Of<IValidationExcludeFiltersProvider>(),
+                new DefaultObjectValidator(Mock.Of<IValidationExcludeFiltersProvider>()),
                 new MockMvcOptionsAccessor());
 
             // Act
@@ -248,8 +246,7 @@ namespace Microsoft.AspNet.Mvc.Core.Test
 
             var invoker = new DefaultControllerActionArgumentBinder(
                 new DataAnnotationsModelMetadataProvider(),
-                new DefaultObjectValidator(),
-                Mock.Of<IValidationExcludeFiltersProvider>(),
+                new DefaultObjectValidator(Mock.Of<IValidationExcludeFiltersProvider>()),
                 new MockMvcOptionsAccessor());
 
             // Act
@@ -309,7 +306,6 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             var invoker = new DefaultControllerActionArgumentBinder(
                 metadataProvider,
                 mockValidatorProvider.Object,
-                Mock.Of<IValidationExcludeFiltersProvider>(),
                 new MockMvcOptionsAccessor());
 
             // Act
@@ -361,7 +357,6 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             var invoker = new DefaultControllerActionArgumentBinder(
                 new DataAnnotationsModelMetadataProvider(),
                 mockValidatorProvider.Object,
-                Mock.Of<IValidationExcludeFiltersProvider>(),
                 new MockMvcOptionsAccessor());
 
             // Act
@@ -411,7 +406,6 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             var invoker = new DefaultControllerActionArgumentBinder(
                 new DataAnnotationsModelMetadataProvider(),
                 mockValidatorProvider.Object,
-                Mock.Of<IValidationExcludeFiltersProvider>(),
                 new MockMvcOptionsAccessor());
 
             // Act
@@ -470,7 +464,6 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             var invoker = new DefaultControllerActionArgumentBinder(
                 new DataAnnotationsModelMetadataProvider(),
                 mockValidatorProvider.Object,
-                Mock.Of<IValidationExcludeFiltersProvider>(),
                 options);
 
             // Act

@@ -60,7 +60,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
                 // Update the model state key if we are bound using an empty prefix and it is a complex type.
                 // This is needed as validation uses the model state key to log errors. The client validation expects
-                // the erros with property names rather than the full name.
+                // the errors with property names rather than the full name.
                 if (newBindingContext.ModelMetadata.IsComplexType && string.IsNullOrEmpty(newBindingContext.ModelName))
                 {
                     bindingContext.ModelStateKey = newBindingContext.ModelStateKey;
