@@ -62,6 +62,9 @@ namespace Microsoft.AspNet.Mvc
         /// <param name="routeName">The name of the route that is used to generate the URL.</param>
         /// <param name="values">An object that contains the route values.</param>
         /// <returns>The generated absolute URL.</returns>
+        /// <remarks>
+        /// The protocol and host is obtained from the current request.
+        /// </remarks>
         string Link(string routeName, object values);
     }
 }
