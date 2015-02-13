@@ -55,5 +55,13 @@ namespace Microsoft.AspNet.Mvc
         /// <param name="routeContext">The context object for the generated URLs for a route.</param>
         /// <returns>The fully qualified or absolute URL.</returns>
         string RouteUrl([NotNull] UrlRouteContext routeContext);
+
+        /// <summary>
+        /// Generates an absolute URL using the specified route name and values.
+        /// </summary>
+        /// <param name="routeName">The name of the route that is used to generate the URL.</param>
+        /// <param name="values">An object that contains the route values.</param>
+        /// <returns>The generated absolute URL.</returns>
+        string Link(string routeName, object values);
     }
 }

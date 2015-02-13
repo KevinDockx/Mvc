@@ -127,6 +127,19 @@ namespace Microsoft.AspNet.Mvc
             return GenerateClientUrl(_httpContext.Request.PathBase, contentPath);
         }
 
+        /// <inheritdoc />
+        public virtual string Link(string routeName, object values)
+        {
+            return RouteUrl(new UrlRouteContext()
+            {
+                RouteName = routeName,
+                Values = values,
+                Protocol = _httpContext.Request.Scheme,
+                Host = _httpContext.Request.Host.ToUriComponent(),
+                Fragment = null
+            });
+        }
+
         private static string GenerateClientUrl([NotNull] PathString applicationPath,
                                                 [NotNull] string path)
         {

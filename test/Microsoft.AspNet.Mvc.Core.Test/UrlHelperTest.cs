@@ -728,6 +728,61 @@ namespace Microsoft.AspNet.Mvc
             Assert.Equal("https://remotelyhost/app/home3/contact#somefragment", url);
         }
 
+        [Fact]
+        public void LinkWithAllParameters_ReturnsExpectedResult()
+        {
+            // Arrange
+            var services = GetServices();
+            var urlHelper = CreateUrlHelperWithRouteCollection(services, "/app");
+
+            // Act
+            var url = urlHelper.Link("namedroute",
+                                     new
+                                     {
+                                         Action = "newaction",
+                                         Controller = "home",
+                                         id = "someid"
+                                     });
+
+            // Assert
+            Assert.Equal("http://localhost/app/named/home/newaction/someid", url);
+        }
+
+        [Fact]
+        public void LinkWithNullRouteName_ReturnsExpectedResult()
+        {
+            // Arrange
+            var services = GetServices();
+            var urlHelper = CreateUrlHelperWithRouteCollection(services, "/app");
+
+            // Act
+            var url = urlHelper.Link(null,
+                                     new
+                                     {
+                                         Action = "newaction",
+                                         Controller = "home",
+                                         id = "someid"
+                                     });
+
+            // Assert
+            Assert.Equal("http://localhost/app/home/newaction/someid", url);
+        }
+
+        [Fact]
+        public void LinkWithDefaultsAndNullRouteValues_ReturnsExpectedResult()
+        {
+            // Arrange
+            var services = GetServices();
+            var routeCollection = GetRouter(services, "MyRouteName", "any/url");
+            var urlHelper = CreateUrlHelper("/app", routeCollection);
+
+            // Act
+            var url = urlHelper.Link("MyRouteName", null);
+
+            // Assert
+            Assert.Equal("http://localhost/app/any/url", url);
+        }
+
         private static HttpContext CreateHttpContext(
             IServiceProvider services,
             string appRoot)
