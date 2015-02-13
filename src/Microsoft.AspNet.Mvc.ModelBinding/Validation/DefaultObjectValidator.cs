@@ -43,6 +43,21 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             RuntimeHelpers.EnsureSufficientExecutionStack();
 
             var modelState = validationContext.ModelValidationContext.ModelState;
+            var bindingSourceMetadata = metadata.BinderMetadata as IBindingSourceMetadata;
+            if (bindingSourceMetadata != null && !bindingSourceMetadata.BindingSource.IsFromRequest)
+            {
+                // Short circuit if the metadata represents something that was not bound using request data.
+                // For example model bound using [FromServices]. Treat such objects as skipped.
+                var validationState = modelState.GetFieldValidationState(modelKey);
+                if (validationState == ModelValidationState.Unvalidated)
+                {
+                    validationContext.ModelValidationContext.ModelState.MarkFieldSkipped(modelKey);
+                }
+
+                // For validation purposes this model is valid.
+                return true;
+            }
+
             if (modelState.HasReachedMaxErrors)
             {
                 // Short circuit if max errors have been recorded. In which case we treat this as invalid.

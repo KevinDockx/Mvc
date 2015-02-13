@@ -275,6 +275,8 @@ namespace Microsoft.AspNet.Mvc.Core
                     .Returns(new EmptyModelMetadataProvider());
             services.Setup(s => s.GetService(typeof(TestService)))
                     .Returns(new TestService());
+            services.Setup(s => s.GetService(typeof(IObjectModelValidator)))
+                    .Returns(new DefaultObjectValidator(Mock.Of<IValidationExcludeFiltersProvider>()));
             services
                 .Setup(s => s.GetService(typeof(IScopedInstance<ActionBindingContext>)))
                 .Returns(new MockScopedInstance<ActionBindingContext>());

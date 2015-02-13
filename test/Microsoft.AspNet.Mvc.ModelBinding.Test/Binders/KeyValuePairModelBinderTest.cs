@@ -25,14 +25,15 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             var binder = new KeyValuePairModelBinder<int, string>();
 
             // Act
-            bool retVal = await binder.BindModelAsync(bindingContext);
+            var retVal = await binder.BindModelAsync(bindingContext);
 
             // Assert
             Assert.True(retVal);
             Assert.Null(bindingContext.Model);
             Assert.False(bindingContext.ModelState.IsValid);
             Assert.Equal("someName", bindingContext.ModelName);
-            Assert.Equal(bindingContext.ModelState["someName.Key"].Errors.First().ErrorMessage, "A value is required.");
+            var error = Assert.Single(bindingContext.ModelState["someName.Key"].Errors);
+            Assert.Equal("A value is required.", error.ErrorMessage);
         }
 
         [Fact]
@@ -46,7 +47,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             var binder = new KeyValuePairModelBinder<int, string>();
 
             // Act
-            bool retVal = await binder.BindModelAsync(bindingContext);
+            var retVal = await binder.BindModelAsync(bindingContext);
 
             // Assert
             Assert.True(retVal);
@@ -57,7 +58,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
         }
 
         [Fact]
-        public async Task BindModel_MissingKyAndMissingValue_DoNotAddModelStateError()
+        public async Task BindModel_MissingKeyAndMissingValue_DoNotAddModelStateError()
         {
             // Arrange
             var valueProvider = new SimpleHttpValueProvider();

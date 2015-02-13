@@ -55,7 +55,7 @@ namespace System.Web.Http
         public IModelMetadataProvider MetadataProvider { get; set; }
 
 
-        [Activate]
+        [FromServices]
         public IObjectModelValidator ObjectValidator { get; set; }
 
         /// <summary>

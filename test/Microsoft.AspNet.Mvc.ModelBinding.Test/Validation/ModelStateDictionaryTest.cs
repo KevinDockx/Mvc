@@ -9,6 +9,52 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 {
     public class ModelStateDictionaryTest
     {
+        [Theory]
+        [InlineData(ModelValidationState.Valid)]
+        [InlineData(ModelValidationState.Unvalidated)]
+        public void MarkFieldSkipped_MarksFieldAsSkipped_IfStateIsNotInValid(ModelValidationState validationState)
+        {
+            // Arrange
+            var modelState = new ModelState
+            {
+                Value = GetValueProviderResult("value"),
+                ValidationState = validationState
+            };
+
+            var source = new ModelStateDictionary
+            {
+                { "key",  modelState }
+            };
+
+            // Act
+            source.MarkFieldSkipped("key");
+
+            // Assert
+            Assert.Equal(ModelValidationState.Skipped, source["key"].ValidationState);
+        }
+
+        [Fact]
+        public void MarkFieldSkipped_MarksFieldAsSkipped_IfKeyIsNotPresent()
+        {
+            // Arrange
+            var modelState = new ModelState
+            {
+                Value = GetValueProviderResult("value"),
+                ValidationState = ModelValidationState.Valid
+            };
+
+            var source = new ModelStateDictionary
+            {
+            };
+
+            // Act
+            source.MarkFieldSkipped("key");
+
+            // Assert
+            Assert.Equal(0, source.ErrorCount);
+            Assert.Equal(1, source.Count);
+            Assert.Equal(ModelValidationState.Skipped, source["key"].ValidationState);
+        }
 
         [Fact]
         public void MarkFieldSkipped_Throws_IfStateIsInvalid()
@@ -27,10 +73,50 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
             // Act
             var exception = Assert.Throws<InvalidOperationException>(() => source.MarkFieldSkipped("key"));
+            
             // Assert
             Assert.Equal(
                 "A field previously marked invalid should not be marked skipped.",
                 exception.Message);
+        }
+
+        [Theory]
+        [InlineData(ModelValidationState.Skipped)]
+        [InlineData(ModelValidationState.Unvalidated)]
+        public void MarkFieldValid_MarksFieldAsValid_IfStateIsNotInvalid(ModelValidationState validationState)
+        {
+            // Arrange
+            var modelState = new ModelState
+            {
+                Value = GetValueProviderResult("value"),
+                ValidationState = validationState
+            };
+
+            var source = new ModelStateDictionary
+            {
+                { "key",  modelState }
+            };
+
+            // Act
+            source.MarkFieldValid("key");
+
+            // Assert
+            Assert.Equal(ModelValidationState.Valid, source["key"].ValidationState);
+        }
+
+        [Fact]
+        public void MarkFieldValid_MarksFieldAsValid_IfKeyIsNotPresent()
+        {
+            // Arrange
+            var source = new ModelStateDictionary();
+
+            // Act
+            source.MarkFieldValid("key");
+
+            // Assert
+            Assert.Equal(0, source.ErrorCount);
+            Assert.Equal(1, source.Count);
+            Assert.Equal(ModelValidationState.Valid, source["key"].ValidationState);
         }
 
         [Fact]
@@ -50,6 +136,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
             // Act
             var exception = Assert.Throws<InvalidOperationException>(() => source.MarkFieldValid("key"));
+            
             // Assert
             Assert.Equal(
                 "A field previously marked invalid should not be marked valid.",

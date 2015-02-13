@@ -106,7 +106,7 @@ namespace Microsoft.AspNet.Mvc
         [FromServices]
         public IUrlHelper Url { get; set; }
 
-        [Activate]
+        [FromServices]
         public IObjectModelValidator ObjectValidator { get; set; }
 
         public IPrincipal User

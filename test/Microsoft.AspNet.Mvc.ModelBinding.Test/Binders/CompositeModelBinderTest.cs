@@ -96,7 +96,6 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
                         Assert.Same(bindingContext.ValueProvider, mbc.ValueProvider);
 
                         mbc.Model = expectedModel;
-                        //mbc.ValidationNode.Validating += delegate { validationCalled = true; };
                         return Task.FromResult(true);
                     });
 

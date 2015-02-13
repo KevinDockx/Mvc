@@ -26,6 +26,22 @@ namespace Microsoft.AspNet.Mvc.FunctionalTests
 
 
         [Fact]
+        public async Task Services_AreNotValidated()
+        {
+            // Arrange
+            var server = TestServer.Create(_services, _app);
+            var client = server.CreateClient();
+
+            // Act
+            var response = await client.GetAsync("http://localhost/Validation/ServicesNotValidated");
+
+            // Assert
+            var stringValue = await response.Content.ReadAsStringAsync();
+            var isModelStateValid = JsonConvert.DeserializeObject<bool>(stringValue);
+            Assert.True(isModelStateValid);
+        }
+
+        [Fact]
         public async Task TypeBasedExclusion_ForBodyAndNonBodyBoundModels()
         {
             // Arrange

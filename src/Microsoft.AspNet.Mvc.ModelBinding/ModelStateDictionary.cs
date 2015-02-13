@@ -132,7 +132,9 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             get { return _innerDictionary.Values; }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Gets a value that indicates whether any model state values in this model state dictionary is invalid or not validated.
+        /// </summary>
         public bool IsValid
         {
             get

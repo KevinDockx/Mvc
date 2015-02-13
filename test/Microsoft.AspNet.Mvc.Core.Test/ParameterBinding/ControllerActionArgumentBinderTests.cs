@@ -300,7 +300,7 @@ namespace Microsoft.AspNet.Mvc.Core.Test
                 ModelBinder = binder.Object,
             };
 
-            var mockValidatorProvider = new Mock<IObjectModelValidator>();
+            var mockValidatorProvider = new Mock<IObjectModelValidator>(MockBehavior.Strict);
             mockValidatorProvider.Setup(o => o.Validate(It.IsAny<ModelValidationContext>(), It.IsAny<string>()));
 
             var invoker = new DefaultControllerActionArgumentBinder(
@@ -334,7 +334,6 @@ namespace Microsoft.AspNet.Mvc.Core.Test
                 }
             };
 
-           
             var actionContext = new ActionContext(
                 new DefaultHttpContext(),
                 new RouteData(),
@@ -351,7 +350,7 @@ namespace Microsoft.AspNet.Mvc.Core.Test
                 ModelBinder = binder.Object,
             };
 
-            var mockValidatorProvider = new Mock<IObjectModelValidator>();
+            var mockValidatorProvider = new Mock<IObjectModelValidator>(MockBehavior.Strict);
             mockValidatorProvider.Setup(o => o.Validate(It.IsAny<ModelValidationContext>(), It.IsAny<string>()))
             .Verifiable();
             var invoker = new DefaultControllerActionArgumentBinder(
@@ -400,9 +399,9 @@ namespace Microsoft.AspNet.Mvc.Core.Test
                 ModelBinder = binder.Object,
             };
 
-            var mockValidatorProvider = new Mock<IObjectModelValidator>();
+            var mockValidatorProvider = new Mock<IObjectModelValidator>(MockBehavior.Strict);
             mockValidatorProvider.Setup(o => o.Validate(It.IsAny<ModelValidationContext>(), It.IsAny<string>()))
-            .Verifiable();
+                                 .Verifiable();
             var invoker = new DefaultControllerActionArgumentBinder(
                 new DataAnnotationsModelMetadataProvider(),
                 mockValidatorProvider.Object,
@@ -459,7 +458,7 @@ namespace Microsoft.AspNet.Mvc.Core.Test
 
             var options = new MockMvcOptionsAccessor();
             options.Options.MaxModelValidationErrors = 5;
-            var mockValidatorProvider = new Mock<IObjectModelValidator>();
+            var mockValidatorProvider = new Mock<IObjectModelValidator>(MockBehavior.Strict);
             mockValidatorProvider.Setup(o => o.Validate(It.IsAny<ModelValidationContext>(), It.IsAny<string>()));
             var invoker = new DefaultControllerActionArgumentBinder(
                 new DataAnnotationsModelMetadataProvider(),

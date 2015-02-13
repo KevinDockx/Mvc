@@ -428,6 +428,26 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             Assert.Equal(modelState.ValidationState, ModelValidationState.Skipped);
         }
 
+        [Fact]
+        public void NonRequestBoundModel_MarkedAsSkipped()
+        {
+            // Arrange
+            var testValidationContext = GetModelValidationContext(
+                new TestServiceProvider(),
+                typeof(TestServiceProvider));
+
+            var validationContext = testValidationContext.ModelValidationContext;
+            var validator = new DefaultObjectValidator(testValidationContext.ExcludeFiltersProvider);
+
+            // Act
+            validator.Validate(validationContext, "serviceProvider");
+
+            // Assert
+            var modelState = validationContext.ModelState["serviceProvider.TestService"];
+            Assert.Empty(modelState.Errors);
+            Assert.Equal(modelState.ValidationState, ModelValidationState.Skipped);
+        }
+
         private TestModelValidationContext GetModelValidationContext(
             object model, Type type, List<Type> excludedTypes = null)
         {
@@ -437,7 +457,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 new DataAnnotationsModelValidatorProvider(),
                 new DataMemberModelValidatorProvider()
             };
-            var modelMetadataProvider = new EmptyModelMetadataProvider();
+            var modelMetadataProvider = new DataAnnotationsModelMetadataProvider();
             var excludedValidationTypesPredicate =
                 new List<IExcludeTypeValidationFilter>();
           
@@ -586,6 +606,17 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                     yield return new ValidationResult("Password does not meet complexity requirements.");
                 }
             }
+        }
+
+        public class TestServiceProvider
+        {
+            [FromServices]
+            [Required]
+            public ITestService TestService { get; set; }
+        }
+
+        public interface ITestService
+        {
         }
 
         private class TestModelValidationContext

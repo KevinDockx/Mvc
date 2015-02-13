@@ -67,6 +67,9 @@ namespace Microsoft.AspNet.Mvc
             options.ValidationExcludeFilters.Add(typeof(XObject));
             options.ValidationExcludeFilters.Add(typeof(Type));
             options.ValidationExcludeFilters.Add(typeof(JToken));
+            options.ValidationExcludeFilters.Add(typeof(System.Threading.CancellationToken));
+            options.ValidationExcludeFilters.Add(typeof(Http.IFormFile));
+            options.ValidationExcludeFilters.Add(typeof(Http.IFormCollection));
             options.ValidationExcludeFilters.Add(typeFullName: "System.Xml.XmlNode");
         }
     }
