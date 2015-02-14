@@ -2025,7 +2025,7 @@ namespace Microsoft.AspNet.Mvc
 
             var binder = new Mock<IModelBinder>();
             binder.Setup(b => b.BindModelAsync(It.IsAny<ModelBindingContext>()))
-                  .Returns(Task.FromResult(result: false));
+                  .Returns(Task.FromResult<ModelBindingResult>(result: null));
             var context = new Mock<HttpContext>();
             context.SetupGet(c => c.Items)
                    .Returns(new Dictionary<object, object>());
@@ -2047,7 +2047,7 @@ namespace Microsoft.AspNet.Mvc
                 inputFormattersProvider.Object,
                 new DefaultControllerActionArgumentBinder(
                     metadataProvider,
-                    new DefaultObjectValidator(Mock.Of<IValidationExcludeFiltersProvider>()),
+                    new DefaultObjectValidator(Mock.Of<IValidationExcludeFiltersProvider>(), metadataProvider),
                     new MockMvcOptionsAccessor()),
                     new MockModelBinderProvider() { ModelBinders = new List<IModelBinder>() { binder.Object } },
                     new MockModelValidatorProviderProvider(),

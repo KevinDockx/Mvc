@@ -169,12 +169,7 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             var binder = new Mock<IModelBinder>();
             binder
                 .Setup(b => b.BindModelAsync(It.IsAny<ModelBindingContext>()))
-                .Callback<ModelBindingContext>(c =>
-                {
-                    // This value won't go into the arguments, because we return false.
-                    c.Model = "Hello";
-                })
-                .Returns(Task.FromResult(result: false));
+                .Returns(Task.FromResult<ModelBindingResult>(result: null));
 
             var actionContext = new ActionContext(
                 new DefaultHttpContext(),
@@ -186,13 +181,14 @@ namespace Microsoft.AspNet.Mvc.Core.Test
                 ModelBinder = binder.Object,
             };
 
+            var modelMetadataProvider = new DataAnnotationsModelMetadataProvider();
             var inputFormattersProvider = new Mock<IInputFormattersProvider>();
             inputFormattersProvider
                 .SetupGet(o => o.InputFormatters)
                 .Returns(new List<IInputFormatter>());
             var invoker = new DefaultControllerActionArgumentBinder(
-                new DataAnnotationsModelMetadataProvider(),
-                new DefaultObjectValidator(Mock.Of<IValidationExcludeFiltersProvider>()),
+                modelMetadataProvider,
+                new DefaultObjectValidator(Mock.Of<IValidationExcludeFiltersProvider>(), modelMetadataProvider),
                 new MockMvcOptionsAccessor());
 
             // Act
@@ -223,11 +219,7 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             var binder = new Mock<IModelBinder>();
             binder
                 .Setup(b => b.BindModelAsync(It.IsAny<ModelBindingContext>()))
-                .Callback<ModelBindingContext>(c =>
-                {
-                    Assert.False(c.IsModelSet);
-                })
-                .Returns(Task.FromResult(result: true));
+                .Returns(Task.FromResult(new ModelBindingResult(null, "", false)));
 
             var actionContext = new ActionContext(
                 new DefaultHttpContext(),
@@ -244,9 +236,10 @@ namespace Microsoft.AspNet.Mvc.Core.Test
                 .SetupGet(o => o.InputFormatters)
                 .Returns(new List<IInputFormatter>());
 
+            var modelMetadataProvider = new DataAnnotationsModelMetadataProvider();
             var invoker = new DefaultControllerActionArgumentBinder(
-                new DataAnnotationsModelMetadataProvider(),
-                new DefaultObjectValidator(Mock.Of<IValidationExcludeFiltersProvider>()),
+                modelMetadataProvider,
+                new DefaultObjectValidator(Mock.Of<IValidationExcludeFiltersProvider>(), modelMetadataProvider),
                 new MockMvcOptionsAccessor());
 
             // Act
@@ -285,10 +278,8 @@ namespace Microsoft.AspNet.Mvc.Core.Test
                     context.ModelMetadata = metadataProvider.GetMetadataForType(
                         modelAccessor: null,
                         modelType: typeof(string));
-
-                    context.Model = value;
                 })
-                .Returns(Task.FromResult(result: true));
+                .Returns(Task.FromResult(result: new ModelBindingResult(value, "", true)));
 
             var actionContext = new ActionContext(
                 new DefaultHttpContext(),
@@ -301,7 +292,7 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             };
 
             var mockValidatorProvider = new Mock<IObjectModelValidator>(MockBehavior.Strict);
-            mockValidatorProvider.Setup(o => o.Validate(It.IsAny<ModelValidationContext>(), It.IsAny<string>()));
+            mockValidatorProvider.Setup(o => o.Validate(It.IsAny<ModelValidationContext>()));
 
             var invoker = new DefaultControllerActionArgumentBinder(
                 metadataProvider,
@@ -342,8 +333,10 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             var binder = new Mock<IModelBinder>();
             binder
                 .Setup(b => b.BindModelAsync(It.IsAny<ModelBindingContext>()))
-                .Callback<ModelBindingContext>(c => c.IsModelSet = true)
-                .Returns(Task.FromResult(result: true));
+                .Returns(Task.FromResult(result: new ModelBindingResult(
+                    model: null,
+                    key: string.Empty,
+                    isModelSet: true)));
 
             var actionBindingContext = new ActionBindingContext()
             {
@@ -351,8 +344,9 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             };
 
             var mockValidatorProvider = new Mock<IObjectModelValidator>(MockBehavior.Strict);
-            mockValidatorProvider.Setup(o => o.Validate(It.IsAny<ModelValidationContext>(), It.IsAny<string>()))
-            .Verifiable();
+            mockValidatorProvider
+                .Setup(o => o.Validate(It.IsAny<ModelValidationContext>()))
+                .Verifiable();
             var invoker = new DefaultControllerActionArgumentBinder(
                 new DataAnnotationsModelMetadataProvider(),
                 mockValidatorProvider.Object,
@@ -363,7 +357,7 @@ namespace Microsoft.AspNet.Mvc.Core.Test
 
             // Assert
             mockValidatorProvider.Verify(
-                o => o.Validate(It.IsAny<ModelValidationContext>(), It.IsAny<string>()), Times.Once());
+                o => o.Validate(It.IsAny<ModelValidationContext>()), Times.Once());
         }
 
         [Fact]
@@ -392,7 +386,7 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             var binder = new Mock<IModelBinder>();
             binder
                 .Setup(b => b.BindModelAsync(It.IsAny<ModelBindingContext>()))
-                .Returns(Task.FromResult(result: false));
+                .Returns(Task.FromResult<ModelBindingResult>(null));
 
             var actionBindingContext = new ActionBindingContext()
             {
@@ -400,7 +394,7 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             };
 
             var mockValidatorProvider = new Mock<IObjectModelValidator>(MockBehavior.Strict);
-            mockValidatorProvider.Setup(o => o.Validate(It.IsAny<ModelValidationContext>(), It.IsAny<string>()))
+            mockValidatorProvider.Setup(o => o.Validate(It.IsAny<ModelValidationContext>()))
                                  .Verifiable();
             var invoker = new DefaultControllerActionArgumentBinder(
                 new DataAnnotationsModelMetadataProvider(),
@@ -411,7 +405,7 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             var result = await invoker.GetActionArgumentsAsync(actionContext, actionBindingContext);
 
             // Assert
-            mockValidatorProvider.Verify(o => o.Validate(It.IsAny<ModelValidationContext>(), It.IsAny<string>()), Times.Never());
+            mockValidatorProvider.Verify(o => o.Validate(It.IsAny<ModelValidationContext>()), Times.Never());
         }
 
         [Fact]
@@ -435,11 +429,8 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             var binder = new Mock<IModelBinder>();
             binder
                 .Setup(b => b.BindModelAsync(It.IsAny<ModelBindingContext>()))
-                .Callback<ModelBindingContext>(c =>
-                {
-                    c.Model = "Hello";
-                })
-                .Returns(Task.FromResult(result: true));
+                .Returns(Task.FromResult(
+                    result: new ModelBindingResult(model: "Hello", key: string.Empty, isModelSet: true)));
 
             var actionContext = new ActionContext(
                 new DefaultHttpContext(),
@@ -459,7 +450,7 @@ namespace Microsoft.AspNet.Mvc.Core.Test
             var options = new MockMvcOptionsAccessor();
             options.Options.MaxModelValidationErrors = 5;
             var mockValidatorProvider = new Mock<IObjectModelValidator>(MockBehavior.Strict);
-            mockValidatorProvider.Setup(o => o.Validate(It.IsAny<ModelValidationContext>(), It.IsAny<string>()));
+            mockValidatorProvider.Setup(o => o.Validate(It.IsAny<ModelValidationContext>()));
             var invoker = new DefaultControllerActionArgumentBinder(
                 new DataAnnotationsModelMetadataProvider(),
                 mockValidatorProvider.Object,

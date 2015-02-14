@@ -216,8 +216,10 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             var testValidationContext = GetModelValidationContext(model, type);
 
             // Act (does not throw)
-            new DefaultObjectValidator(testValidationContext.ExcludeFiltersProvider)
-                .Validate(testValidationContext.ModelValidationContext, modelStatePrefix: string.Empty);
+            new DefaultObjectValidator(
+                testValidationContext.ExcludeFiltersProvider,
+                testValidationContext.ModelMetadataProvider)
+                .Validate(testValidationContext.ModelValidationContext);
 
             // Assert
             var actualErrors = new Dictionary<string, string>();
@@ -249,8 +251,10 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 typeof(InvalidOperationException),
                 () =>
                 {
-                    new DefaultObjectValidator(testValidationContext.ExcludeFiltersProvider)
-                        .Validate(testValidationContext.ModelValidationContext, modelStatePrefix: string.Empty);
+                    new DefaultObjectValidator(
+                        testValidationContext.ExcludeFiltersProvider,
+                        testValidationContext.ModelMetadataProvider)
+                        .Validate(testValidationContext.ModelValidationContext);
                 });
         }
 
@@ -277,11 +281,13 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             object input, Type type, List<Type> excludedTypes)
         {
             // Arrange
-            var testValidationContext = GetModelValidationContext(input, type, excludedTypes);
+            var testValidationContext = GetModelValidationContext(input, type, string.Empty, excludedTypes);
 
             // Act & Assert (does not throw)
-            new DefaultObjectValidator(testValidationContext.ExcludeFiltersProvider)
-                .Validate(testValidationContext.ModelValidationContext, modelStatePrefix: string.Empty);
+            new DefaultObjectValidator(
+                testValidationContext.ExcludeFiltersProvider,
+                testValidationContext.ModelMetadataProvider)
+                .Validate(testValidationContext.ModelValidationContext);
             Assert.True(testValidationContext.ModelValidationContext.ModelState.IsValid);
         }
 
@@ -291,15 +297,17 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         {
             // Arrange
             var testValidationContext = GetModelValidationContext(
-                new Uri("/api/values", UriKind.Relative), typeof(Uri), new List<Type>());
+                new Uri("/api/values", UriKind.Relative), typeof(Uri));
             var validationContext = testValidationContext.ModelValidationContext;
 
             // Act & Assert
             Assert.Throws<InvalidOperationException>(
                 () =>
                 {
-                    new DefaultObjectValidator(testValidationContext.ExcludeFiltersProvider)
-                        .Validate(validationContext, modelStatePrefix: string.Empty);
+                    new DefaultObjectValidator(
+                        testValidationContext.ExcludeFiltersProvider,
+                        testValidationContext.ModelMetadataProvider)
+                        .Validate(validationContext);
                 });
             Assert.True(validationContext.ModelState.IsValid);
         }
@@ -314,8 +322,10 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             var validationContext = testValidationContext.ModelValidationContext;
 
             // Act (does not throw)
-            new DefaultObjectValidator(testValidationContext.ExcludeFiltersProvider)
-                .Validate(validationContext, modelStatePrefix: string.Empty);
+            new DefaultObjectValidator(
+                testValidationContext.ExcludeFiltersProvider,
+                testValidationContext.ModelMetadataProvider)
+                .Validate(validationContext);
 
             // Assert
             Assert.Contains("Street", validationContext.ModelState.Keys);
@@ -337,8 +347,10 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             var testValidationContext = GetModelValidationContext(instance, typeof(TypeThatOverridesEquals[]));
 
             // Act & Assert (does not throw)
-            new DefaultObjectValidator(testValidationContext.ExcludeFiltersProvider)
-                .Validate(testValidationContext.ModelValidationContext, modelStatePrefix: string.Empty);
+            new DefaultObjectValidator(
+                testValidationContext.ExcludeFiltersProvider,
+                testValidationContext.ModelMetadataProvider)
+                .Validate(testValidationContext.ModelValidationContext);
         }
 
         [Fact]
@@ -351,14 +363,21 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 ConfirmPassword = "not-password-val"
             };
 
-            var testValidationContext = GetModelValidationContext(user, typeof(User), new List<Type> { typeof(string) });
+            var testValidationContext = GetModelValidationContext(
+                user,
+                typeof(User),
+                "user",
+                new List<Type> { typeof(string) });
+
             var validationContext = testValidationContext.ModelValidationContext;
             validationContext.ModelState.MaxAllowedErrors = 2;
             validationContext.ModelState.AddModelError("key1", "error1");
-            var validator = new DefaultObjectValidator(testValidationContext.ExcludeFiltersProvider);
+            var validator = new DefaultObjectValidator(
+                testValidationContext.ExcludeFiltersProvider,
+                testValidationContext.ModelMetadataProvider);
 
             // Act
-            validator.Validate(validationContext, "user");
+            validator.Validate(validationContext);
 
             // Assert
             Assert.Equal(new[] { "key1", "user.Password", "", "user.ConfirmPassword" },
@@ -381,12 +400,18 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 ConfirmPassword = "not-password-val"
             };
 
-            var testValidationContext = GetModelValidationContext(user, typeof(User), new List<Type> { typeof(User) });
+            var testValidationContext = GetModelValidationContext(
+                user,
+                typeof(User),
+                "user",
+                new List<Type> { typeof(User) });
             var validationContext = testValidationContext.ModelValidationContext;
-            var validator = new DefaultObjectValidator(testValidationContext.ExcludeFiltersProvider);
+            var validator = new DefaultObjectValidator(
+                testValidationContext.ExcludeFiltersProvider,
+                testValidationContext.ModelMetadataProvider);
 
             // Act
-            validator.Validate(validationContext, "user");
+            validator.Validate(validationContext);
 
             // Assert
             Assert.False(validationContext.ModelState.ContainsKey("user.Password"));
@@ -406,17 +431,23 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 ConfirmPassword = "not-password-val"
             };
 
-            var testValidationContext = GetModelValidationContext(user, typeof(User), new List<Type> { typeof(User) });
+            var testValidationContext = GetModelValidationContext(
+                user,
+                typeof(User),
+                "user",
+                new List<Type> { typeof(User) });
             var validationContext = testValidationContext.ModelValidationContext;
 
             // Set the value on model state as a model binder would.
             validationContext.ModelState.SetModelValue(
                 "user.Password",
                 Mock.Of<ValueProviderResult>());
-            var validator = new DefaultObjectValidator(testValidationContext.ExcludeFiltersProvider);
+            var validator = new DefaultObjectValidator(
+                testValidationContext.ExcludeFiltersProvider,
+                testValidationContext.ModelMetadataProvider);
 
             // Act
-            validator.Validate(validationContext, "user");
+            validator.Validate(validationContext);
 
             // Assert
             var modelState = validationContext.ModelState["user.Password"];
@@ -434,13 +465,16 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             // Arrange
             var testValidationContext = GetModelValidationContext(
                 new TestServiceProvider(),
-                typeof(TestServiceProvider));
+                typeof(TestServiceProvider),
+                "serviceProvider");
 
             var validationContext = testValidationContext.ModelValidationContext;
-            var validator = new DefaultObjectValidator(testValidationContext.ExcludeFiltersProvider);
+            var validator = new DefaultObjectValidator(
+                testValidationContext.ExcludeFiltersProvider, 
+                testValidationContext.ModelMetadataProvider);
 
             // Act
-            validator.Validate(validationContext, "serviceProvider");
+            validator.Validate(validationContext);
 
             // Assert
             var modelState = validationContext.ModelState["serviceProvider.TestService"];
@@ -449,7 +483,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         }
 
         private TestModelValidationContext GetModelValidationContext(
-            object model, Type type, List<Type> excludedTypes = null)
+            object model, Type type, string key = "", List<Type> excludedTypes = null)
         {
             var modelStateDictionary = new ModelStateDictionary();
             var providers = new IModelValidatorProvider[]
@@ -477,7 +511,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             return new TestModelValidationContext
             {
                 ModelValidationContext = new ModelValidationContext(
-                    modelMetadataProvider,
+                    key,
                     new CompositeModelValidatorProvider(providers),
                     modelStateDictionary,
                     new ModelMetadata(
@@ -487,6 +521,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                         modelType: type,
                         propertyName: null),
                     containerMetadata: null),
+                ModelMetadataProvider = modelMetadataProvider,
                 ExcludeFiltersProvider = mockValidationExcludeFiltersProvider.Object
             };
         }
@@ -622,6 +657,8 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         private class TestModelValidationContext
         {
             public ModelValidationContext ModelValidationContext { get; set; }
+
+            public IModelMetadataProvider ModelMetadataProvider { get; set; }
 
             public IValidationExcludeFiltersProvider ExcludeFiltersProvider { get; set; }
         }

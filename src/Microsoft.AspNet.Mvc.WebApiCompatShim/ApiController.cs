@@ -422,13 +422,13 @@ namespace System.Web.Http
             var modelMetadata = MetadataProvider.GetMetadataForType(() => entity, typeof(TEntity));
 
             var modelValidationContext = new ModelValidationContext(
-                MetadataProvider,
+                keyPrefix,
                 BindingContext.ValidatorProvider,
                 ModelState,
                 modelMetadata,
                 containerMetadata: null);
 
-            ObjectValidator.Validate(modelValidationContext, keyPrefix);
+            ObjectValidator.Validate(modelValidationContext);
         }
 
         protected virtual void Dispose(bool disposing)

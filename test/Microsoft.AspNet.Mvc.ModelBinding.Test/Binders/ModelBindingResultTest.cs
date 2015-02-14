@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Microsoft.AspNet.Mvc.ModelBinding.Test
 {
-    public class ComplexModelDtoResultTest
+    public class ModelBindingResultTest
     {
         [Fact]
         public void Constructor_SetsProperties()
@@ -13,15 +13,15 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             // Arrange
 
             // Act
-            var result = new ComplexModelDtoResult(
+            var result = new ModelBindingResult(
                 "some string",
-                isModelBound: true,
-                modelStateKey: "someName");
+                isModelSet: true,
+                key: "someName");
 
             // Assert
             Assert.Equal("some string", result.Model);
-            Assert.True(result.IsModelBound);
-            Assert.Equal("someName", result.ModelStateKey);
+            Assert.True(result.IsModelSet);
+            Assert.Equal("someName", result.Key);
         }
     }
 }

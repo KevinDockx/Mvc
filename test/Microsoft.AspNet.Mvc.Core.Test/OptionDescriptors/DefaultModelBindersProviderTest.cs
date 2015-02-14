@@ -51,7 +51,7 @@ namespace Microsoft.AspNet.Mvc.OptionDescriptors
 
             public ITestService Service { get; private set; }
 
-            public Task<bool> BindModelAsync(ModelBindingContext bindingContext)
+            public Task<ModelBindingResult> BindModelAsync(ModelBindingContext bindingContext)
             {
                 throw new NotImplementedException();
             }

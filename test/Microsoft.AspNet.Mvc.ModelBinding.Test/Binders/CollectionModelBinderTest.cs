@@ -71,10 +71,10 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             var binder = new CollectionModelBinder<int>();
 
             // Act
-            bool retVal = await binder.BindModelAsync(bindingContext);
+            var retVal = await binder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.Equal(new[] { 42, 100, 200 }, ((List<int>)bindingContext.Model).ToArray());
+            Assert.Equal(new[] { 42, 100, 200 }, ((List<int>)retVal.Model).ToArray());
         }
 
         [Fact]
@@ -89,11 +89,11 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             var binder = new CollectionModelBinder<int>();
 
             // Act
-            bool retVal = await binder.BindModelAsync(bindingContext);
+            var retVal = await binder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.True(retVal);
-            Assert.Equal(new[] { 42, 100, 200 }, ((List<int>)bindingContext.Model).ToArray());
+            Assert.NotNull(retVal);
+            Assert.Equal(new[] { 42, 100, 200 }, ((List<int>)retVal.Model).ToArray());
         }
 #endif
 
@@ -137,8 +137,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
                 .Returns((ModelBindingContext mbc) =>
                 {
                     Assert.Equal("someName", mbc.ModelName);
-                    mbc.Model = 42;
-                    return Task.FromResult(true);
+                    return Task.FromResult(new ModelBindingResult(42, mbc.ModelName, true));
                 });
             var modelBinder = new CollectionModelBinder<int>();
 
@@ -176,10 +175,11 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
                     var value = await mbc.ValueProvider.GetValueAsync(mbc.ModelName);
                     if (value != null)
                     {
-                        mbc.Model = value.ConvertTo(mbc.ModelType);
-                        return true;
+                        var model = value.ConvertTo(mbc.ModelType);
+                        return new ModelBindingResult(model, mbc.ModelName, true);
                     }
-                    return false;
+
+                    return null;
                 });
             return mockIntBinder.Object;
         }

@@ -17,14 +17,18 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
     public class DefaultObjectValidator : IObjectModelValidator
     {
         private readonly IValidationExcludeFiltersProvider _excludeFilterProvider;
+        private readonly IModelMetadataProvider _modelMetadataProvider;
         
-        public DefaultObjectValidator(IValidationExcludeFiltersProvider excludeFilterProvider)
+        public DefaultObjectValidator(
+            IValidationExcludeFiltersProvider excludeFilterProvider,
+            IModelMetadataProvider modelMetadataProvider)
         {
             _excludeFilterProvider = excludeFilterProvider;
+            _modelMetadataProvider = modelMetadataProvider;
         }
 
         /// <inheritdoc />
-        public void Validate([NotNull] ModelValidationContext modelValidationContext, string modelStatePrefix)
+        public void Validate([NotNull] ModelValidationContext modelValidationContext)
         {
             var metadata = modelValidationContext.ModelMetadata;
             var validationContext = new ValidationContext()
@@ -33,7 +37,8 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 Visited = new HashSet<object>(ReferenceEqualityComparer.Instance),
             };
 
-            ValidateNonVisitedNodeAndChildren(modelStatePrefix, metadata, validationContext, validators: null);
+            ValidateNonVisitedNodeAndChildren(
+                modelValidationContext.RootPrefix, metadata, validationContext, validators: null);
         }
 
         private bool ValidateNonVisitedNodeAndChildren(string modelKey,
@@ -44,7 +49,9 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
             var modelState = validationContext.ModelValidationContext.ModelState;
             var bindingSourceMetadata = metadata.BinderMetadata as IBindingSourceMetadata;
-            if (bindingSourceMetadata != null && !bindingSourceMetadata.BindingSource.IsFromRequest)
+            var bindingSource = bindingSourceMetadata?.BindingSource;
+
+            if (bindingSource != null && !bindingSource.IsFromRequest)
             {
                 // Short circuit if the metadata represents something that was not bound using request data.
                 // For example model bound using [FromServices]. Treat such objects as skipped.
@@ -162,9 +169,9 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         private bool ValidateElements(string currentKey, IEnumerable model, ValidationContext validationContext)
         {
             var elementType = GetElementType(model.GetType());
-            var elementMetadata =
-                validationContext.ModelValidationContext.MetadataProvider.GetMetadataForType(
-                    modelAccessor: null, modelType: elementType);
+            var elementMetadata = _modelMetadataProvider.GetMetadataForType(
+                modelAccessor: null,
+                modelType: elementType);
 
             var validators = validationContext.ModelValidationContext.ValidatorProvider.GetValidators(elementMetadata);
 

@@ -13,8 +13,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         /// </summary>
         /// <param name="validationContext">The <see cref="ModelValidationContext"/> associated with the current call.
         /// </param>
-        /// <param name="modelStatePrefix">The prefix to be used while adding errors to the 
         /// <see cref="ModelStateDictionary"/></param>
-        void Validate(ModelValidationContext validationContext, string modelStatePrefix);
+        void Validate(ModelValidationContext validationContext);
     }
 }

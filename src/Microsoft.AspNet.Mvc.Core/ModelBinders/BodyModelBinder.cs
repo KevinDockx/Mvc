@@ -43,7 +43,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         }
 
         /// <inheritdoc />
-        protected async override Task BindModelCoreAsync([NotNull] ModelBindingContext bindingContext)
+        protected async override Task<ModelBindingResult> BindModelCoreAsync([NotNull] ModelBindingContext bindingContext)
         {
             var formatters = _bindingContext.Value.InputFormatters;
 
@@ -55,10 +55,11 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 var unsupportedContentType = Resources.FormatUnsupportedContentType(
                     bindingContext.OperationBindingContext.HttpContext.Request.ContentType);
                 bindingContext.ModelState.AddModelError(bindingContext.ModelName, unsupportedContentType);
-                return;
+                return new ModelBindingResult(null, bindingContext.ModelName, false);
             }
 
-            bindingContext.Model = await formatter.ReadAsync(formatterContext);
+            var model = await formatter.ReadAsync(formatterContext);
+            return new ModelBindingResult(model, bindingContext.ModelName, true);
         }
     }
 }

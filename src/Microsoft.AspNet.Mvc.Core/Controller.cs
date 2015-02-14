@@ -1101,15 +1101,15 @@ namespace Microsoft.AspNet.Mvc
                modelAccessor: () => model,
                modelType: model.GetType());
 
+            var modelName = prefix ?? string.Empty;
             var validationContext = new ModelValidationContext(
-                MetadataProvider,
+                modelName,
                 BindingContext.ValidatorProvider,
                 ModelState,
                 modelMetadata,
                 containerMetadata: null);
 
-            var modelName = prefix ?? string.Empty;
-            ObjectValidator.Validate(validationContext, modelName);
+            ObjectValidator.Validate(validationContext);
             return ModelState.IsValid;
         }
 

@@ -45,17 +45,19 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
                         Assert.Equal("someName", context.ModelName);
                         Assert.Same(bindingContext.ValueProvider, context.ValueProvider);
 
-                        context.Model = 42;
-                        return Task.FromResult(true);
+
+                        return Task.FromResult(
+                            new ModelBindingResult(model: 42, key: "someName", isModelSet: true));
                     });
             var shimBinder = CreateCompositeBinder(mockIntBinder.Object);
 
             // Act
-            var isBound = await shimBinder.BindModelAsync(bindingContext);
+            var result = await shimBinder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.True(isBound);
-            Assert.Equal(42, bindingContext.Model);
+            Assert.NotNull(result);
+            Assert.True(result.IsModelSet);
+            Assert.Equal(42, result.Model);
         }
 
         [Fact]
@@ -88,29 +90,30 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
                     {
                         if (!string.IsNullOrEmpty(mbc.ModelName))
                         {
-                            return Task.FromResult(false);
+                            return Task.FromResult<ModelBindingResult>(null);
                         }
 
                         Assert.Same(bindingContext.ModelMetadata, mbc.ModelMetadata);
                         Assert.Equal("", mbc.ModelName);
                         Assert.Same(bindingContext.ValueProvider, mbc.ValueProvider);
 
-                        mbc.Model = expectedModel;
-                        return Task.FromResult(true);
+                        return Task.FromResult(new ModelBindingResult(expectedModel, string.Empty, true));
                     });
 
             var shimBinder = CreateCompositeBinder(mockIntBinder.Object);
 
             // Act
-            var isBound = await shimBinder.BindModelAsync(bindingContext);
+            var result = await shimBinder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.True(isBound);
-            Assert.Equal(expectedModel, bindingContext.Model);
+            Assert.NotNull(result);
+            Assert.True(result.IsModelSet);
+            Assert.Equal(string.Empty, result.Key);
+            Assert.Equal(expectedModel, result.Model);
         }
 
         [Fact]
-        public async Task ModelBinder_ReturnsTrue_WithoutSettingValue_DoesNotSetTheModelStateKey()
+        public async Task ModelBinder_ReturnsTrue_WithoutSettingValue()
         {
             // Arrange
 
@@ -133,19 +136,18 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             var modelBinder = new Mock<IModelBinder>();
             modelBinder
                 .Setup(mb => mb.BindModelAsync(It.IsAny<ModelBindingContext>()))
-                .Returns(Task.FromResult(true));
+                .Returns(Task.FromResult(new ModelBindingResult(null, "someName", false)));
 
             var composite = CreateCompositeBinder(modelBinder.Object);
 
             // Act
-            var isBound = await composite.BindModelAsync(bindingContext);
+            var result = await composite.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.True(isBound);
-
-            Assert.Null(bindingContext.Model);
-            Assert.False(bindingContext.IsModelSet);
-            Assert.Null(bindingContext.ModelStateKey);
+            Assert.NotNull(result);
+            Assert.False(result.IsModelSet);
+            Assert.Equal("someName", result.Key);
+            Assert.Null(result.Model);
         }
 
         [Fact]
@@ -172,23 +174,18 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             var modelBinder = new Mock<IModelBinder>();
             modelBinder
                 .Setup(mb => mb.BindModelAsync(It.IsAny<ModelBindingContext>()))
-                .Callback<ModelBindingContext>(context =>
-                {
-                    context.Model = null;
-                })
-                .Returns(Task.FromResult(true));
+                .Returns(Task.FromResult(new ModelBindingResult(null, "someName", true)));
 
             var composite = CreateCompositeBinder(modelBinder.Object);
 
             // Act
-            var isBound = await composite.BindModelAsync(bindingContext);
+            var result = await composite.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.True(isBound);
-
-            Assert.Null(bindingContext.Model);
-            Assert.True(bindingContext.IsModelSet);
-            Assert.Equal("someName", bindingContext.ModelStateKey);
+            Assert.NotNull(result);
+            Assert.True(result.IsModelSet);
+            Assert.Equal("someName", result.Key);
+            Assert.Null(result.Model);
         }
 
         [Fact]
@@ -197,7 +194,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             // Arrange
             var mockListBinder = new Mock<IModelBinder>();
             mockListBinder.Setup(o => o.BindModelAsync(It.IsAny<ModelBindingContext>()))
-                          .Returns(Task.FromResult(false))
+                          .Returns(Task.FromResult<ModelBindingResult>(null))
                           .Verifiable();
 
             var shimBinder = mockListBinder.Object;
@@ -209,11 +206,10 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             };
 
             // Act
-            var isBound = await shimBinder.BindModelAsync(bindingContext);
+            var result = await shimBinder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.False(isBound);
-            Assert.Null(bindingContext.Model);
+            Assert.Null(result);
             Assert.True(bindingContext.ModelState.IsValid);
             mockListBinder.Verify();
         }
@@ -234,11 +230,10 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             };
 
             // Act
-            var isBound = await shimBinder.BindModelAsync(bindingContext);
+            var result = await shimBinder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.False(isBound);
-            Assert.Null(bindingContext.Model);
+            Assert.Null(result);
         }
 
         [Fact]
@@ -255,11 +250,11 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             var bindingContext = CreateBindingContext(binder, valueProvider, typeof(SimplePropertiesModel));
 
             // Act
-            var isBound = await binder.BindModelAsync(bindingContext);
+            var result = await binder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.True(isBound);
-            var model = Assert.IsType<SimplePropertiesModel>(bindingContext.Model);
+            Assert.NotNull(result);
+            var model = Assert.IsType<SimplePropertiesModel>(result.Model);
             Assert.Equal("firstName-value", model.FirstName);
             Assert.Equal("lastName-value", model.LastName);
         }
@@ -284,11 +279,11 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             var bindingContext = CreateBindingContext(binder, valueProvider, typeof(Person));
 
             // Act
-            var isBound = await binder.BindModelAsync(bindingContext);
+            var result = await binder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.True(isBound);
-            var model = Assert.IsType<Person>(bindingContext.Model);
+            Assert.NotNull(result);
+            var model = Assert.IsType<Person>(result.Model);
             Assert.Equal("firstName-value", model.FirstName);
             Assert.Equal("lastName-value", model.LastName);
             Assert.Equal(2, model.Friends.Count);

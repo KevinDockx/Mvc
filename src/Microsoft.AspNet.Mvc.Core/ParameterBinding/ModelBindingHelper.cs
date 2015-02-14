@@ -142,7 +142,7 @@ namespace Microsoft.AspNet.Mvc
            where TModel : class
         {
             var modelMetadata = metadataProvider.GetMetadataForType(
-                modelAccessor: null,
+                modelAccessor: () => model,
                 modelType: model.GetType());
 
             var operationBindingContext = new OperationBindingContext
@@ -157,7 +157,6 @@ namespace Microsoft.AspNet.Mvc
             {
                 ModelMetadata = modelMetadata,
                 ModelName = prefix,
-                Model = model,
                 ModelState = modelState,
                 ValueProvider = valueProvider,
                 FallbackToEmptyPrefix = true,
@@ -165,10 +164,12 @@ namespace Microsoft.AspNet.Mvc
                 PropertyFilter = predicate
             };
 
-            if (await modelBinder.BindModelAsync(modelBindingContext))
+            var modelBindingResult = await modelBinder.BindModelAsync(modelBindingContext);
+            if (modelBindingResult != null)
             {
                 var modelValidationContext = new ModelValidationContext(modelBindingContext, modelMetadata);
-                objectModelValidator.Validate(modelValidationContext, prefix);
+                modelValidationContext.RootPrefix = prefix;
+                objectModelValidator.Validate(modelValidationContext);
                 return modelState.IsValid;
             }
 

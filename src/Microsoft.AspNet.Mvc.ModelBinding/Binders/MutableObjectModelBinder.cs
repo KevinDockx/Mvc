@@ -14,12 +14,12 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 {
     public class MutableObjectModelBinder : IModelBinder
     {
-        public virtual async Task<bool> BindModelAsync(ModelBindingContext bindingContext)
+        public virtual async Task<ModelBindingResult> BindModelAsync(ModelBindingContext bindingContext)
         {
             ModelBindingHelper.ValidateBindingContext(bindingContext);
             if (!CanBindType(bindingContext.ModelType))
             {
-                return false;
+                return null;
             }
 
             var mutableObjectBinderContext = new MutableObjectBinderContext()
@@ -30,15 +30,16 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
             if (!(await CanCreateModel(mutableObjectBinderContext)))
             {
-                return false;
+                return null;
             }
 
             EnsureModel(bindingContext);
-            var dto = await CreateAndPopulateDto(bindingContext, mutableObjectBinderContext.PropertyMetadata);
+            var result = await CreateAndPopulateDto(bindingContext, mutableObjectBinderContext.PropertyMetadata);
 
             // post-processing, e.g. property setters and hooking up validation
-            ProcessDto(bindingContext, dto);
-            return true;
+            ProcessDto(bindingContext, (ComplexModelDto)result.Model);
+            return 
+                new ModelBindingResult(bindingContext.ModelMetadata.Model, bindingContext.ModelName, isModelSet: true);
         }
 
         protected virtual bool CanUpdateProperty(ModelMetadata propertyMetadata)
@@ -234,7 +235,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             return true;
         }
 
-        private async Task<ComplexModelDto> CreateAndPopulateDto(ModelBindingContext bindingContext,
+        private async Task<ModelBindingResult> CreateAndPopulateDto(ModelBindingContext bindingContext,
                                                      IEnumerable<ModelMetadata> propertyMetadatas)
         {
             // create a DTO and call into the DTO binder
@@ -245,8 +246,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             var dtoBindingContext =
                 new ModelBindingContext(bindingContext, bindingContext.ModelName, complexModelDtoMetadata);
 
-            await bindingContext.OperationBindingContext.ModelBinder.BindModelAsync(dtoBindingContext);
-            return (ComplexModelDto)dtoBindingContext.Model;
+            return await bindingContext.OperationBindingContext.ModelBinder.BindModelAsync(dtoBindingContext);
         }
 
         protected virtual object CreateModel(ModelBindingContext bindingContext)
@@ -258,9 +258,9 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
         protected virtual void EnsureModel(ModelBindingContext bindingContext)
         {
-            if (bindingContext.Model == null)
+            if (bindingContext.ModelMetadata.Model == null)
             {
-                bindingContext.Model = CreateModel(bindingContext);
+                bindingContext.ModelMetadata.Model = CreateModel(bindingContext);
             }
         }
 
@@ -351,7 +351,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             var validationInfo = GetPropertyValidationInfo(bindingContext);
 
             // Eliminate provided properties from requiredProperties; leaving just *missing* required properties.
-            var boundProperties = dto.Results.Where(p => p.Value.IsModelBound).Select(p => p.Key.PropertyName);
+            var boundProperties = dto.Results.Where(p => p.Value.IsModelSet).Select(p => p.Key.PropertyName);
             validationInfo.RequiredProperties.ExceptWith(boundProperties);
 
             foreach (var missingRequiredProperty in validationInfo.RequiredProperties)
@@ -400,7 +400,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
         protected virtual void SetProperty(ModelBindingContext bindingContext,
                                            ModelMetadata propertyMetadata,
-                                           ComplexModelDtoResult dtoResult,
+                                           ModelBindingResult dtoResult,
                                            IModelValidator requiredValidator)
         {
             var bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase;
@@ -415,7 +415,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
             object value;
             var hasDefaultValue = false;
-            if (dtoResult.IsModelBound)
+            if (dtoResult.IsModelSet)
             {
                 value = dtoResult.Model;
             }
@@ -430,7 +430,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             // the property setters throw, e.g. if we're setting entity keys to null.
             if (value == null)
             {
-                var modelStateKey = dtoResult.ModelStateKey;
+                var modelStateKey = dtoResult.Key;
                 var validationState = bindingContext.ModelState.GetFieldValidationState(modelStateKey);
                 if (validationState == ModelValidationState.Unvalidated)
                 {
@@ -445,7 +445,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 }
             }
 
-            if (!dtoResult.IsModelBound && !hasDefaultValue)
+            if (!dtoResult.IsModelSet && !hasDefaultValue)
             {
                 // If we don't have a value, don't set it on the model and trounce a pre-initialized
                 // value.
@@ -456,7 +456,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             {
                 try
                 {
-                    property.SetValue(bindingContext.Model, value);
+                    property.SetValue(bindingContext.ModelMetadata.Model, value);
                 }
                 catch (Exception ex)
                 {
@@ -467,7 +467,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                     {
                         ex = targetInvocationException.InnerException;
                     }
-                    var modelStateKey = dtoResult.ModelStateKey;
+                    var modelStateKey = dtoResult.Key;
                     var validationState = bindingContext.ModelState.GetFieldValidationState(modelStateKey);
                     if (validationState == ModelValidationState.Unvalidated)
                     {
@@ -478,7 +478,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             else
             {
                 // trying to set a non-nullable value type to null, need to make sure there's a message
-                var modelStateKey = dtoResult.ModelStateKey;
+                var modelStateKey = dtoResult.Key;
                 var validationState = bindingContext.ModelState.GetFieldValidationState(modelStateKey);
                 if (validationState == ModelValidationState.Unvalidated)
                 {

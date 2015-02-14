@@ -28,8 +28,8 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             var retVal = await binder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.True(retVal);
-            Assert.Null(bindingContext.Model);
+            Assert.NotNull(retVal);
+            Assert.Null(retVal.Model);
             Assert.False(bindingContext.ModelState.IsValid);
             Assert.Equal("someName", bindingContext.ModelName);
             var error = Assert.Single(bindingContext.ModelState["someName.Key"].Errors);
@@ -50,8 +50,8 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             var retVal = await binder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.True(retVal);
-            Assert.Null(bindingContext.Model);
+            Assert.NotNull(retVal);
+            Assert.Null(retVal.Model);
             Assert.False(bindingContext.ModelState.IsValid);
             Assert.Equal("someName", bindingContext.ModelName);
             Assert.Equal(bindingContext.ModelState["someName.Value"].Errors.First().ErrorMessage, "A value is required.");
@@ -64,18 +64,21 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             var valueProvider = new SimpleHttpValueProvider();
 
             // Create int binder to create the value but not the key.
-            var bindingContext = GetBindingContext(valueProvider, CreateIntBinder());
+            var bindingContext = GetBindingContext(valueProvider);
+            var mockBinder = new Mock<IModelBinder>();
+            mockBinder.Setup(o => o.BindModelAsync(It.IsAny<ModelBindingContext>()))
+                      .Returns(Task.FromResult<ModelBindingResult>(null));
+
+            bindingContext.OperationBindingContext.ModelBinder = mockBinder.Object;
             var binder = new KeyValuePairModelBinder<int, string>();
 
             // Act
-            bool retVal = await binder.BindModelAsync(bindingContext);
+            var retVal = await binder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.True(retVal);
-            Assert.Null(bindingContext.Model);
-            Assert.False(bindingContext.ModelState.IsValid);
-            Assert.Equal("someName", bindingContext.ModelName);
-            Assert.Empty(bindingContext.ModelState["someName.Value"].Errors);
+            Assert.Null(retVal);
+            Assert.True(bindingContext.ModelState.IsValid);
+            Assert.Equal(0, bindingContext.ModelState.ErrorCount);
         }
 
         [Fact]
@@ -92,8 +95,8 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
             var retVal = await binder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.True(retVal);
-            Assert.Equal(new KeyValuePair<int, string>(42, "some-value"), bindingContext.Model);
+            Assert.NotNull(retVal);
+            Assert.Equal(new KeyValuePair<int, string>(42, "some-value"), retVal.Model);
         }
 
         [Fact]
@@ -122,7 +125,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
                 .Returns((ModelBindingContext mbc) =>
                 {
                     Assert.Equal("someName.key", mbc.ModelName);
-                    return Task.FromResult(true);
+                    return Task.FromResult(new ModelBindingResult(null, string.Empty, true));
                 });
             var bindingContext = GetBindingContext(new SimpleHttpValueProvider(), innerBinder.Object);
 
@@ -168,10 +171,9 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
                 {
                     if (mbc.ModelType == typeof(int))
                     {
-                        mbc.Model = 42;
-                        return Task.FromResult(true);
+                        return Task.FromResult(new ModelBindingResult(42, mbc.ModelName, true));
                     }
-                    return Task.FromResult(false);
+                    return Task.FromResult<ModelBindingResult>(null);
                 });
             return mockIntBinder.Object;
         }
@@ -185,10 +187,9 @@ namespace Microsoft.AspNet.Mvc.ModelBinding.Test
                 {
                     if (mbc.ModelType == typeof(string))
                     {
-                        mbc.Model = "some-value";
-                        return Task.FromResult(true);
+                        return Task.FromResult(new ModelBindingResult("some-value", mbc.ModelName, true));
                     }
-                    return Task.FromResult(false);
+                    return Task.FromResult<ModelBindingResult>(null);
                 });
             return mockStringBinder.Object;
         }

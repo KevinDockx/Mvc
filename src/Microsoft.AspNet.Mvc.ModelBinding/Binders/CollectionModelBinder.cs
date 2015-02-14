@@ -13,13 +13,13 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 {
     public class CollectionModelBinder<TElement> : IModelBinder
     {
-        public virtual async Task<bool> BindModelAsync(ModelBindingContext bindingContext)
+        public virtual async Task<ModelBindingResult> BindModelAsync(ModelBindingContext bindingContext)
         {
             ModelBindingHelper.ValidateBindingContext(bindingContext);
 
             if (!await bindingContext.ValueProvider.ContainsPrefixAsync(bindingContext.ModelName))
             {
-                return false;
+                return null;
             }
 
             var valueProviderResult = await bindingContext.ValueProvider.GetValueAsync(bindingContext.ModelName);
@@ -27,13 +27,13 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                     BindSimpleCollection(bindingContext, valueProviderResult.RawValue, valueProviderResult.Culture) :
                     BindComplexCollection(bindingContext);
             var boundCollection = await bindCollectionTask;
-
-            return CreateOrReplaceCollection(bindingContext, boundCollection);
+            var model = CreateModel(boundCollection);
+            return new ModelBindingResult(model, bindingContext.ModelName, true);
         }
 
         // Used when the ValueProvider contains the collection to be bound as a single element, e.g. the raw value
         // is [ "1", "2" ] and needs to be converted to an int[].
-        internal async Task<List<TElement>> BindSimpleCollection(ModelBindingContext bindingContext,
+        internal async Task<IEnumerable<TElement>> BindSimpleCollection(ModelBindingContext bindingContext,
                                                                  object rawValue,
                                                                  CultureInfo culture)
         {
@@ -62,9 +62,10 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 };
 
                 object boundValue = null;
-                if (await bindingContext.OperationBindingContext.ModelBinder.BindModelAsync(innerBindingContext))
+                var result = await bindingContext.OperationBindingContext.ModelBinder.BindModelAsync(innerBindingContext);
+                if (result != null)
                 {
-                    boundValue = innerBindingContext.Model;
+                    boundValue = result.Model;
                 }
                 boundCollection.Add(ModelBindingHelper.CastOrDefault<TElement>(boundValue));
             }
@@ -73,7 +74,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         }
 
         // Used when the ValueProvider contains the collection to be bound as multiple elements, e.g. foo[0], foo[1].
-        private async Task<List<TElement>> BindComplexCollection(ModelBindingContext bindingContext)
+        private async Task<IEnumerable<TElement>> BindComplexCollection(ModelBindingContext bindingContext)
         {
             var indexPropertyName = ModelBindingHelper.CreatePropertyModelName(bindingContext.ModelName, "index");
             var valueProviderResultIndex = await bindingContext.ValueProvider.GetValueAsync(indexPropertyName);
@@ -81,7 +82,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             return await BindComplexCollectionFromIndexes(bindingContext, indexNames);
         }
 
-        internal async Task<List<TElement>> BindComplexCollectionFromIndexes(ModelBindingContext bindingContext,
+        internal async Task<IEnumerable<TElement>> BindComplexCollectionFromIndexes(ModelBindingContext bindingContext,
                                                                              IEnumerable<string> indexNames)
         {
             bool indexNamesIsFinite;
@@ -109,10 +110,11 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
                 var modelType = bindingContext.ModelType;
 
-                if (await bindingContext.OperationBindingContext.ModelBinder.BindModelAsync(childBindingContext))
+                var result = await bindingContext.OperationBindingContext.ModelBinder.BindModelAsync(childBindingContext);
+                if (result != null)
                 {
                     didBind = true;
-                    boundValue = childBindingContext.Model;
+                    boundValue = result.Model;
                 }
 
                 // infinite size collection stops on first bind failure
@@ -129,11 +131,10 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
         // Extensibility point that allows the bound collection to be manipulated or transformed before
         // being returned from the binder.
-        protected virtual bool CreateOrReplaceCollection(ModelBindingContext bindingContext,
-                                                         IList<TElement> newCollection)
+        protected virtual object CreateModel(IEnumerable<TElement> newCollection)
         {
-            CreateOrReplaceCollection(bindingContext, newCollection, () => new List<TElement>());
-            return true;
+            //CreateOrReplaceCollection(bindingContext, newCollection, () => new List<TElement>());
+            return newCollection;
         }
 
         internal static object[] RawValueToObjectArray(object rawValue)
@@ -160,24 +161,6 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
             // fallback
             return new[] { rawValue };
-        }
-
-        internal static void CreateOrReplaceCollection(ModelBindingContext bindingContext,
-                                                                 IEnumerable<TElement> incomingElements,
-                                                                 Func<ICollection<TElement>> creator)
-        {
-            var collection = bindingContext.Model as ICollection<TElement>;
-            if (collection == null || collection.IsReadOnly)
-            {
-                collection = creator();
-                bindingContext.Model = collection;
-            }
-
-            collection.Clear();
-            foreach (var element in incomingElements)
-            {
-                collection.Add(element);
-            }
         }
     }
 }

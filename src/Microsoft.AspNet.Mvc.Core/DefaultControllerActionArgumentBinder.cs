@@ -98,17 +98,17 @@ namespace Microsoft.AspNet.Mvc
             {
                 var parameterType = parameter.ModelType;
                 var modelBindingContext = GetModelBindingContext(parameter, modelState, operationBindingContext);
-                if (await bindingContext.ModelBinder.BindModelAsync(modelBindingContext) &&
-                    modelBindingContext.IsModelSet)
+                var modelBindingResult = await bindingContext.ModelBinder.BindModelAsync(modelBindingContext);
+                if (modelBindingResult != null && modelBindingResult.IsModelSet)
                 {
-                    arguments[parameter.PropertyName] = modelBindingContext.Model;
+                    arguments[parameter.PropertyName] = modelBindingResult.Model;
                     var validationContext = new ModelValidationContext(
-                    _modelMetadataProvider,
+                    modelBindingResult.Key,
                     bindingContext.ValidatorProvider,
                     actionContext.ModelState,
                     parameter,
                     containerMetadata: null);
-                    _validator.Validate(validationContext, modelBindingContext.ModelStateKey);
+                    _validator.Validate(validationContext);
                 }
             }
         }

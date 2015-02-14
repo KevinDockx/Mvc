@@ -14,7 +14,8 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         /// Async function to bind to a particular model.
         /// </summary>
         /// <param name="bindingContext">The binding context which has the object to be bound.</param>
-        /// <returns>A Task with a bool implying the success or failure of the operation.</returns>
-        Task<bool> BindModelAsync(ModelBindingContext bindingContext);
+        /// <returns>A Task which on completion returns a <see cref="ModelBindingResult"/> which represents the result
+        /// of the model binding process.
+        Task<ModelBindingResult> BindModelAsync(ModelBindingContext bindingContext);
     }
 }

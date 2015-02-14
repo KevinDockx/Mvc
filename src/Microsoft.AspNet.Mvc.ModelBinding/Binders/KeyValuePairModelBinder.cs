@@ -10,7 +10,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 {
     public sealed class KeyValuePairModelBinder<TKey, TValue> : IModelBinder
     {
-        public async Task<bool> BindModelAsync(ModelBindingContext bindingContext)
+        public async Task<ModelBindingResult> BindModelAsync(ModelBindingContext bindingContext)
         {
             ModelBindingHelper.ValidateBindingContext(bindingContext,
                                                       typeof(KeyValuePair<TKey, TValue>),
@@ -18,9 +18,12 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
             var keyResult = await TryBindStrongModel<TKey>(bindingContext, "Key");
             var valueResult = await TryBindStrongModel<TValue>(bindingContext, "Value");
+            var model = bindingContext.ModelMetadata.Model;
+            var isModelSet = false;
             if (keyResult.Success && valueResult.Success)
             {
-                bindingContext.Model = new KeyValuePair<TKey, TValue>(keyResult.Model, valueResult.Model);
+                model = new KeyValuePair<TKey, TValue>(keyResult.Model, valueResult.Model);
+                isModelSet = true;
             }
             else if (!keyResult.Success && valueResult.Success)
             {
@@ -32,8 +35,9 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 bindingContext.ModelState.TryAddModelError(valueResult.ModelStateKey,
                     Resources.KeyValuePair_BothKeyAndValueMustBePresent);
             }
-
-            return keyResult.Success || valueResult.Success;
+            
+            var result = new ModelBindingResult(model, bindingContext.ModelName, isModelSet);
+            return (keyResult.Success || valueResult.Success) ? result : null;
         }
 
         internal async Task<BindResult<TModel>> TryBindStrongModel<TModel>(ModelBindingContext parentBindingContext,
@@ -46,10 +50,11 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
                 ModelBindingHelper.CreatePropertyModelName(parentBindingContext.ModelName, propertyName);
             var propertyBindingContext =
                 new ModelBindingContext(parentBindingContext, propertyModelName, propertyModelMetadata);
-
-            if (await propertyBindingContext.OperationBindingContext.ModelBinder.BindModelAsync(propertyBindingContext))
+            var modelBindingResult = 
+                await propertyBindingContext.OperationBindingContext.ModelBinder.BindModelAsync(propertyBindingContext);
+            if (modelBindingResult != null)
             {
-                var untypedModel = propertyBindingContext.Model;
+                var untypedModel = modelBindingResult.Model;
                 var model = ModelBindingHelper.CastOrDefault<TModel>(untypedModel);
                 return new BindResult<TModel>(success: true, model: model);
             }

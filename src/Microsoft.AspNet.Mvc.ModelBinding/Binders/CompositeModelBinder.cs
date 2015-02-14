@@ -31,59 +31,64 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         /// <inheritdoc />
         public IReadOnlyList<IModelBinder> ModelBinders { get; }
 
-        public virtual async Task<bool> BindModelAsync([NotNull] ModelBindingContext bindingContext)
+        public virtual async Task<ModelBindingResult> BindModelAsync([NotNull] ModelBindingContext bindingContext)
         {
             var newBindingContext = CreateNewBindingContext(bindingContext,
                                                             bindingContext.ModelName);
 
-            var boundSuccessfully = await TryBind(newBindingContext);
-            if (!boundSuccessfully && !string.IsNullOrEmpty(bindingContext.ModelName)
+            var modelBindingResult = await TryBind(newBindingContext);
+            if (modelBindingResult == null && !string.IsNullOrEmpty(bindingContext.ModelName)
                 && bindingContext.FallbackToEmptyPrefix)
             {
                 // fallback to empty prefix?
                 newBindingContext = CreateNewBindingContext(bindingContext,
                                                             modelName: string.Empty);
-                boundSuccessfully = await TryBind(newBindingContext);
+                modelBindingResult = await TryBind(newBindingContext);
             }
 
-            if (!boundSuccessfully)
+            if (modelBindingResult == null)
             {
-                return false; // something went wrong
+                return null; // something went wrong
             }
 
             bindingContext.OperationBindingContext.BodyBindingState =
                 newBindingContext.OperationBindingContext.BodyBindingState;
 
-            if (newBindingContext.IsModelSet)
+            var modelKey = bindingContext.ModelName;
+            if (modelBindingResult.IsModelSet)
             {
-                bindingContext.Model = newBindingContext.Model;
+                bindingContext.ModelMetadata.Model = modelBindingResult.Model;
 
                 // Update the model state key if we are bound using an empty prefix and it is a complex type.
                 // This is needed as validation uses the model state key to log errors. The client validation expects
                 // the errors with property names rather than the full name.
-                if (newBindingContext.ModelMetadata.IsComplexType && string.IsNullOrEmpty(newBindingContext.ModelName))
+                if (newBindingContext.ModelMetadata.IsComplexType && string.IsNullOrEmpty(modelBindingResult.Key))
                 {
-                    bindingContext.ModelStateKey = newBindingContext.ModelStateKey;
+                    modelKey = modelBindingResult.Key;
                 }
             }
 
-            return true;
+            return new ModelBindingResult(
+                modelBindingResult.Model,
+                modelKey,
+                modelBindingResult.IsModelSet);
         }
 
-        private async Task<bool> TryBind(ModelBindingContext bindingContext)
+        private async Task<ModelBindingResult> TryBind(ModelBindingContext bindingContext)
         {
             RuntimeHelpers.EnsureSufficientExecutionStack();
 
             foreach (var binder in ModelBinders)
             {
-                if (await binder.BindModelAsync(bindingContext))
+                var result = await binder.BindModelAsync(bindingContext);
+                if (result != null)
                 {
-                    return true;
+                    return result;
                 }
             }
 
             // Either we couldn't find a binder, or the binder couldn't bind. Distinction is not important.
-            return false;
+            return null;
         }
 
         private static ModelBindingContext CreateNewBindingContext(ModelBindingContext oldBindingContext,
@@ -91,7 +96,6 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         {
             var newBindingContext = new ModelBindingContext
             {
-                IsModelSet = oldBindingContext.IsModelSet,
                 ModelMetadata = oldBindingContext.ModelMetadata,
                 ModelName = modelName,
                 ModelState = oldBindingContext.ModelState,

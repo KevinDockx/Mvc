@@ -52,8 +52,9 @@ namespace Microsoft.AspNet.Mvc
             // Assert
 
             // Returns true because it understands the metadata type.
-            Assert.True(binderResult);
-            Assert.Null(bindingContext.Model);
+            Assert.NotNull(binderResult);
+            Assert.False(binderResult.IsModelSet);
+            Assert.Null(binderResult.Model);
             Assert.True(bindingContext.ModelState.ContainsKey("someName"));
         }
 
@@ -73,7 +74,8 @@ namespace Microsoft.AspNet.Mvc
             var binderResult = await binder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.True(binderResult);
+            Assert.NotNull(binderResult);
+            Assert.False(binderResult.IsModelSet);
         }
 
         [Fact]
@@ -92,7 +94,7 @@ namespace Microsoft.AspNet.Mvc
             var binderResult = await binder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.False(binderResult);
+            Assert.Null(binderResult);
         }
 
         [Fact]
@@ -111,7 +113,7 @@ namespace Microsoft.AspNet.Mvc
             var binderResult = await binder.BindModelAsync(bindingContext);
 
             // Assert
-            Assert.False(binderResult);
+            Assert.Null(binderResult);
         }
 
         private static ModelBindingContext GetBindingContext(Type modelType, IInputFormatter inputFormatter)

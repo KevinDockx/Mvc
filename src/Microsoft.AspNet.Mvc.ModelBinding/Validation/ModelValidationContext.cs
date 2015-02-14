@@ -9,7 +9,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
     {
         public ModelValidationContext([NotNull] ModelBindingContext bindingContext,
                                       [NotNull] ModelMetadata metadata)
-            : this(bindingContext.OperationBindingContext.MetadataProvider,
+            : this(bindingContext.ModelName,
                    bindingContext.OperationBindingContext.ValidatorProvider,
                    bindingContext.ModelState,
                    metadata,
@@ -17,7 +17,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         {
         }
 
-        public ModelValidationContext([NotNull] IModelMetadataProvider metadataProvider,
+        public ModelValidationContext(string rootPrefix,
                                       [NotNull] IModelValidatorProvider validatorProvider,
                                       [NotNull] ModelStateDictionary modelState,
                                       [NotNull] ModelMetadata metadata,
@@ -25,7 +25,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         {
             ModelMetadata = metadata;
             ModelState = modelState;
-            MetadataProvider = metadataProvider;
+            RootPrefix = rootPrefix;
             ValidatorProvider = validatorProvider;
             ContainerMetadata = containerMetadata;
         }
@@ -36,9 +36,8 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             ModelMetadata = metadata;
             ContainerMetadata = parentContext.ModelMetadata;
             ModelState = parentContext.ModelState;
-            MetadataProvider = parentContext.MetadataProvider;
+            RootPrefix = parentContext.RootPrefix;
             ValidatorProvider = parentContext.ValidatorProvider;
-            MetadataProvider = parentContext.MetadataProvider;
         }
 
         public ModelMetadata ModelMetadata { get; }
@@ -47,7 +46,8 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
         public ModelStateDictionary ModelState { get; }
 
-        public IModelMetadataProvider MetadataProvider { get; }
+        public string RootPrefix { get; set; }
+
         public IModelValidatorProvider ValidatorProvider { get; }
     }
 }

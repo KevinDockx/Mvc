@@ -55,43 +55,6 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         public OperationBindingContext OperationBindingContext { get; set; }
 
         /// <summary>
-        /// Gets or sets the model associated with this context.
-        /// </summary>
-        /// <remarks>
-        /// The <see cref="ModelMetadata"/> property must be set to access this property.
-        /// </remarks>
-        public object Model
-        {
-            get
-            {
-                EnsureModelMetadata();
-                return ModelMetadata.Model;
-            }
-            set
-            {
-                IsModelSet = true;
-                ModelStateKey = ModelName;
-                EnsureModelMetadata();
-                ModelMetadata.Model = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the model name which was used to bind the model.
-        /// 
-        /// This property can be used during validation to add model state for a bound model.
-        /// </summary>
-        public string ModelStateKey { get; set; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether or not the <see cref="Model"/> value has been set.
-        /// 
-        /// This property can be used to distinguish between a model binder which does not find a value and
-        /// the case where a model binder sets the <c>null</c> value.
-        /// </summary>
-        public bool IsModelSet { get; set; }
-
-        /// <summary>
         /// Gets or sets the metadata for the model associated with this context.
         /// </summary>
         public ModelMetadata ModelMetadata { get; set; }
