@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
+using Xunit;
 using Xunit.Sdk;
 
 namespace Microsoft.AspNet.Mvc.Xml
@@ -22,11 +23,6 @@ namespace Microsoft.AspNet.Mvc.Xml
         /// <param name="actualXml">Actual xml string.</param>
         public static void Equal(string expectedXml, string actualXml)
         {
-            if (string.Equals(expectedXml, actualXml, StringComparison.Ordinal))
-            {
-                return;
-            }
-
             var sortedExpectedXDocument = SortAttributes(XDocument.Parse(expectedXml));
             var sortedActualXDocument = SortAttributes(XDocument.Parse(actualXml));
 
@@ -38,7 +34,7 @@ namespace Microsoft.AspNet.Mvc.Xml
 
             if (!areEqual)
             {
-                throw new EqualException(sortedExpectedXDocument.GetRawXml(), sortedActualXDocument.GetRawXml());
+                throw new EqualException(GetRawXml(sortedExpectedXDocument), GetRawXml(sortedActualXDocument));
             }
         }
 
@@ -58,36 +54,34 @@ namespace Microsoft.AspNet.Mvc.Xml
                 && string.Equals(expected.Encoding, actual.Encoding, StringComparison.OrdinalIgnoreCase);
         }
 
-        private static XDocument SortAttributes(XDocument doc)
+        private static XDocument SortAttributes(XDocument document)
         {
             return new XDocument(
-                    doc.Declaration,
-                    doc.Nodes().OfType<XText>().FirstOrDefault(),
-                    SortAttributes(doc.Root));
+                    document.Declaration,
+                    document.Nodes().Where(node => node.NodeType != XmlNodeType.Element),
+                    SortAttributes(document.Root));
         }
 
         private static XElement SortAttributes(XElement element)
         {
             return new XElement(
                     element.Name,
-                    element.Nodes().OfType<XText>().FirstOrDefault(),
+                    element.Nodes().Where(node => node.NodeType != XmlNodeType.Element),
                     element.Attributes().OrderBy(a => a.Name.ToString()),
                     element.Elements().Select(child => SortAttributes(child)));
         }
 
         // Since ToString() on an XDocument gives a formatted string making it difficult
         // to view differences in strings when a test fails, here the formatting is disabled.
-        private static string GetRawXml(this XDocument xdocument)
+        private static string GetRawXml(XDocument document)
         {
-            string xml = null;
             var stream = new MemoryStream();
-            xdocument.Save(stream, SaveOptions.DisableFormatting);
+            document.Save(stream, SaveOptions.DisableFormatting);
             stream.Position = 0;
             using (var reader = new StreamReader(stream))
             {
-                xml = reader.ReadToEnd();
+                return reader.ReadToEnd();
             }
-            return xml;
         }
     }
 }
